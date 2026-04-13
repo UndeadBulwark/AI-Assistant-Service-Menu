@@ -69,8 +69,11 @@ fi
 
 KCM_BUILT=false
 echo ""
-echo "Checking KCM build dependencies..."
-if check_build_deps; then
+
+if [ -f "${PLUGIN_DIR}/kcm_ai_assistant.so" ]; then
+    echo "KCM plugin already installed at ${PLUGIN_DIR}/kcm_ai_assistant.so"
+    KCM_BUILT=true
+elif check_build_deps; then
     echo "Build deps satisfied. Building KCM plugin..."
     echo ""
 
@@ -101,7 +104,7 @@ if check_build_deps; then
     fi
 else
     echo "Skipping KCM build (missing deps). Shell config will be used instead."
-    echo "Install deps and re-run to get the native KDE config panel."
+    echo "Install deps and re-run to build the native KDE config panel."
 fi
 
 echo ""
