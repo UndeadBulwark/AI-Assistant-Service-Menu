@@ -178,6 +178,12 @@ if [ ! -f "${HICON_DIR}/index.theme" ]; then
 [Icon Theme]
 Name=hicolor
 Directories=scalable/apps
+
+[scalable/apps]
+Size=64
+MinSize=1
+MaxSize=256
+Type=Scalable
 ICONINDEX
     echo "  -> Created ${HICON_DIR}/index.theme"
 fi
