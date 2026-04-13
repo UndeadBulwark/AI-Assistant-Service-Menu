@@ -21,18 +21,25 @@ public:
     void defaults() override;
 
 private Q_SLOTS:
-    void onModelChanged(int index);
+    void onSourceChanged(int id, bool checked);
+    void onCloudModelChanged(int index);
     void onDetectInstalled();
     void onChanged();
 
 private:
     void loadConfig();
-    void addModelItems();
-    void addSeparator();
-    void addInstalledModels(const QStringList &models);
+    void addCloudModelItems();
+    void queryLocalModels();
+    void selectModelInCombos(const QString &model, const QString &source);
 
-    QComboBox *m_modelCombo;
+    QButtonGroup *m_sourceGroup;
+    QRadioButton *m_radioCloud;
+    QRadioButton *m_radioLocal;
+
+    QComboBox *m_cloudCombo;
     QLineEdit *m_customModelEdit;
+    QComboBox *m_localCombo;
+
     QRadioButton *m_radioModel;
     QRadioButton *m_radioRaw;
     QRadioButton *m_radioDefault;

@@ -146,8 +146,11 @@ if [ ! -f "${CONFIG_DIR}/config.conf" ]; then
 # AI Assistant Service Menu configuration
 # Edited via KCM or manually
 
-# Model to use (e.g. "glm-5.1:cloud", "llama3.1:8b", "codellama:13b")
+# Model to use (e.g. "glm-5.1:cloud", "llama3.1:8b")
 MODEL=glm-5.1:cloud
+
+# Model source: "cloud" or "local"
+MODEL_SOURCE=cloud
 
 # Extra flags passed to opencode (e.g. "--no-stream", "--debug")
 EXTRA_FLAGS=

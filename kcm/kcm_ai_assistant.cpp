@@ -33,14 +33,31 @@ KcmAiAssistant::KcmAiAssistant(QObject *parent, const KPluginMetaData &data)
     form->setHorizontalSpacing(20);
     form->setVerticalSpacing(12);
 
-    m_modelCombo = new QComboBox(widget());
-    addModelItems();
-    form->addRow(QStringLiteral("Model:"), m_modelCombo);
+    m_radioCloud = new QRadioButton(QStringLiteral("Cloud"), widget());
+    m_radioLocal = new QRadioButton(QStringLiteral("Local"), widget());
+    m_sourceGroup = new QButtonGroup(widget());
+    m_sourceGroup->addButton(m_radioCloud, 0);
+    m_sourceGroup->addButton(m_radioLocal, 1);
+    m_radioCloud->setChecked(true);
+
+    auto *sourceLayout = new QHBoxLayout();
+    sourceLayout->addWidget(m_radioCloud);
+    sourceLayout->addWidget(m_radioLocal);
+    sourceLayout->addStretch();
+    form->addRow(QStringLiteral("Model Source:"), sourceLayout);
+
+    m_cloudCombo = new QComboBox(widget());
+    addCloudModelItems();
+    form->addRow(QStringLiteral("Cloud Model:"), m_cloudCombo);
 
     m_customModelEdit = new QLineEdit(widget());
-    m_customModelEdit->setPlaceholderText(QStringLiteral("e.g. glm-5.1:cloud, llama3.1:8b"));
+    m_customModelEdit->setPlaceholderText(QStringLiteral("e.g. glm-5.1:cloud, gemma4:26b"));
     m_customModelEdit->hide();
     form->addRow(QString(), m_customModelEdit);
+
+    m_localCombo = new QComboBox(widget());
+    m_localCombo->hide();
+    form->addRow(QStringLiteral("Local Model:"), m_localCombo);
 
     m_detectButton = new QPushButton(QStringLiteral("Detect Installed Ollama Models"), widget());
     form->addRow(QString(), m_detectButton);
@@ -67,8 +84,12 @@ KcmAiAssistant::KcmAiAssistant(QObject *parent, const KPluginMetaData &data)
     m_configPath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)
                    + QStringLiteral("/ai-assistant-menu/config.conf");
 
-    connect(m_modelCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &KcmAiAssistant::onModelChanged);
+    connect(m_sourceGroup, &QButtonGroup::idToggled,
+            this, &KcmAiAssistant::onSourceChanged);
+    connect(m_cloudCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &KcmAiAssistant::onCloudModelChanged);
+    connect(m_localCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { onChanged(); });
     connect(m_customModelEdit, &QLineEdit::textChanged,
             this, &KcmAiAssistant::onChanged);
     connect(m_launchModeGroup, &QButtonGroup::idToggled, this,
@@ -79,81 +100,118 @@ KcmAiAssistant::KcmAiAssistant(QObject *parent, const KPluginMetaData &data)
             this, &KcmAiAssistant::onDetectInstalled);
 }
 
-void KcmAiAssistant::addModelItems()
+void KcmAiAssistant::addCloudModelItems()
 {
-    m_modelCombo->addItem(QStringLiteral("Cloud Models"), QString());
-    m_modelCombo->addItem(QStringLiteral("  glm-5.1:cloud  (GLM, default)"), QStringLiteral("glm-5.1:cloud"));
-    m_modelCombo->addItem(QStringLiteral("  gpt-4o  (OpenAI)"), QStringLiteral("gpt-4o"));
-    m_modelCombo->addItem(QStringLiteral("  gpt-4o-mini  (OpenAI)"), QStringLiteral("gpt-4o-mini"));
-    m_modelCombo->addItem(QStringLiteral("  o1  (OpenAI)"), QStringLiteral("o1"));
-    m_modelCombo->addItem(QStringLiteral("  o3-mini  (OpenAI)"), QStringLiteral("o3-mini"));
-    m_modelCombo->addItem(QStringLiteral("  claude-sonnet-4-20250514  (Anthropic)"), QStringLiteral("claude-sonnet-4-20250514"));
-    m_modelCombo->addItem(QStringLiteral("  claude-haiku-4-20250514  (Anthropic)"), QStringLiteral("claude-haiku-4-20250514"));
-    m_modelCombo->addItem(QStringLiteral("  gemini-2.5-pro  (Google)"), QStringLiteral("gemini-2.5-pro"));
-    m_modelCombo->addItem(QStringLiteral("  gemini-2.5-flash  (Google)"), QStringLiteral("gemini-2.5-flash"));
-    m_modelCombo->addItem(QStringLiteral("  deepseek-chat  (DeepSeek)"), QStringLiteral("deepseek-chat"));
-    m_modelCombo->addItem(QStringLiteral("  deepseek-reasoner  (DeepSeek)"), QStringLiteral("deepseek-reasoner"));
+    m_cloudCombo->addItem(QStringLiteral("glm-5.1  (GLM, default)"), QStringLiteral("glm-5.1:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("minimax-m2.7  (MiniMax coding/agentic)"), QStringLiteral("minimax-m2.7:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("gemma4  (Google Gemma 4)"), QStringLiteral("gemma4:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("qwen3.5  (Qwen multimodal)"), QStringLiteral("qwen3.5:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("qwen3-coder-next  (Qwen coding)"), QStringLiteral("qwen3-coder-next:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("ministral-3  (Mistral edge)"), QStringLiteral("ministral-3:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("devstral-small-2  (Devstral 24B agent)"), QStringLiteral("devstral-small-2:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("nemotron-3-super  (NVIDIA 120B MoE)"), QStringLiteral("nemotron-3-super:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("qwen3-next  (Qwen 80B)"), QStringLiteral("qwen3-next:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("glm-5  (GLM 744B reasoning)"), QStringLiteral("glm-5:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("kimi-k2.5  (Moonshot multimodal)"), QStringLiteral("kimi-k2.5:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("rnj-1  (Essential AI 8B)"), QStringLiteral("rnj-1:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("nemotron-3-nano  (NVIDIA efficient)"), QStringLiteral("nemotron-3-nano:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("minimax-m2.5  (MiniMax productivity)"), QStringLiteral("minimax-m2.5:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("devstral-2  (Devstral 123B)"), QStringLiteral("devstral-2:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("cogito-2.1  (Cogito 671B)"), QStringLiteral("cogito-2.1:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("gemini-3-flash-preview  (Gemini 3 Flash)"), QStringLiteral("gemini-3-flash-preview:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("glm-4.7  (GLM coding)"), QStringLiteral("glm-4.7:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("deepseek-v3.2  (DeepSeek reasoning)"), QStringLiteral("deepseek-v3.2:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("minimax-m2  (MiniMax M2)"), QStringLiteral("minimax-m2:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("minimax-m2.1  (MiniMax multilingual)"), QStringLiteral("minimax-m2.1:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("kimi-k2-thinking  (Moonshot thinking)"), QStringLiteral("kimi-k2-thinking:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("mistral-large-3  (Mistral enterprise)"), QStringLiteral("mistral-large-3:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("gpt-oss  (OpenAI open-weight)"), QStringLiteral("gpt-oss:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("qwen3-vl  (Qwen vision)"), QStringLiteral("qwen3-vl:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("qwen3-coder  (Qwen agentic coding)"), QStringLiteral("qwen3-coder:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("deepseek-v3.1  (DeepSeek hybrid)"), QStringLiteral("deepseek-v3.1:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("glm-4.6  (GLM agentic)"), QStringLiteral("glm-4.6:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("kimi-k2  (Moonshot MoE)"), QStringLiteral("kimi-k2:cloud"));
+    m_cloudCombo->addItem(QStringLiteral("gemma3  (Google Gemma 3)"), QStringLiteral("gemma3:cloud"));
 
-    addSeparator();
-
-    m_modelCombo->addItem(QStringLiteral("Popular Local Models"), QString());
-    m_modelCombo->addItem(QStringLiteral("  llama3.1:8b  (~4.7 GB)"), QStringLiteral("llama3.1:8b"));
-    m_modelCombo->addItem(QStringLiteral("  llama3.1:70b  (~40 GB)"), QStringLiteral("llama3.1:70b"));
-    m_modelCombo->addItem(QStringLiteral("  llama3.2:3b  (~2.0 GB)"), QStringLiteral("llama3.2:3b"));
-    m_modelCombo->addItem(QStringLiteral("  llama3.3:70b  (~40 GB)"), QStringLiteral("llama3.3:70b"));
-    m_modelCombo->addItem(QStringLiteral("  mistral:7b  (~4.1 GB)"), QStringLiteral("mistral:7b"));
-    m_modelCombo->addItem(QStringLiteral("  mistral-nemo:12b  (~7.2 GB)"), QStringLiteral("mistral-nemo:12b"));
-    m_modelCombo->addItem(QStringLiteral("  phi3:mini  (~2.3 GB)"), QStringLiteral("phi3:mini"));
-    m_modelCombo->addItem(QStringLiteral("  gemma2:9b  (~5.4 GB)"), QStringLiteral("gemma2:9b"));
-    m_modelCombo->addItem(QStringLiteral("  qwen2.5:7b  (~4.4 GB)"), QStringLiteral("qwen2.5:7b"));
-    m_modelCombo->addItem(QStringLiteral("  codestral:22b  (~12 GB)"), QStringLiteral("codestral:22b"));
-
-    addSeparator();
-
-    m_modelCombo->addItem(QStringLiteral("Coding Local Models"), QString());
-    m_modelCombo->addItem(QStringLiteral("  codellama:13b  (General code)"), QStringLiteral("codellama:13b"));
-    m_modelCombo->addItem(QStringLiteral("  codellama:34b  (General code, large)"), QStringLiteral("codellama:34b"));
-    m_modelCombo->addItem(QStringLiteral("  deepseek-coder-v2:16b  (DeepSeek code)"), QStringLiteral("deepseek-coder-v2:16b"));
-    m_modelCombo->addItem(QStringLiteral("  starcoder2:7b  (StarCoder2)"), QStringLiteral("starcoder2:7b"));
-    m_modelCombo->addItem(QStringLiteral("  qwen2.5-coder:7b  (Qwen code)"), QStringLiteral("qwen2.5-coder:7b"));
-    m_modelCombo->addItem(QStringLiteral("  qwen2.5-coder:32b  (Qwen code, large)"), QStringLiteral("qwen2.5-coder:32b"));
-    m_modelCombo->addItem(QStringLiteral("  codegemma:7b  (Gemma code)"), QStringLiteral("codegemma:7b"));
-
-    addSeparator();
-
-    m_modelCombo->addItem(QStringLiteral("Custom..."), QStringLiteral("__custom__"));
+    m_cloudCombo->insertSeparator(m_cloudCombo->count());
+    m_cloudCombo->addItem(QStringLiteral("Custom..."), QStringLiteral("__custom__"));
 }
 
-void KcmAiAssistant::addSeparator()
+void KcmAiAssistant::queryLocalModels()
 {
-    m_modelCombo->insertSeparator(m_modelCombo->count());
-}
+    auto *mgr = new QNetworkAccessManager(this);
+    QUrl url(QStringLiteral("http://localhost:11434/api/tags"));
+    QNetworkReply *reply = mgr->get(QNetworkRequest(url));
 
-void KcmAiAssistant::addInstalledModels(const QStringList &models)
-{
-    int customIdx = m_modelCombo->findData(QStringLiteral("__custom__"));
-    if (customIdx < 0) return;
+    connect(reply, &QNetworkReply::finished, this, [this, reply, mgr]() {
+        reply->deleteLater();
+        mgr->deleteLater();
 
-    for (int i = m_modelCombo->count() - 1; i >= 0; --i) {
-        QString d = m_modelCombo->itemData(i).toString();
-        if (d.startsWith(QStringLiteral("installed:")))
-            m_modelCombo->removeItem(i);
-    }
+        m_localCombo->clear();
+        m_localCombo->addItem(QStringLiteral("(no model selected)"), QString());
 
-    int sepIdx = customIdx;
-    for (int i = 0; i < m_modelCombo->count(); ++i) {
-        if (m_modelCombo->itemData(i).toString() == QStringLiteral("__custom__")) {
-            sepIdx = i;
-            break;
+        if (reply->error() != QNetworkReply::NoError) {
+            m_statusLabel->setText(QStringLiteral("Ollama not running. Start with: ollama serve"));
+            return;
         }
-    }
 
-    if (!models.isEmpty()) {
-        m_modelCombo->insertSeparator(sepIdx);
-        for (const auto &model : models) {
-            m_modelCombo->insertItem(sepIdx, QStringLiteral("  %1  (installed)").arg(model),
-                                     QStringLiteral("installed:%1").arg(model));
-            ++sepIdx;
+        QJsonParseError err;
+        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll(), &err);
+        if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+            m_statusLabel->setText(QStringLiteral("Error parsing Ollama response"));
+            return;
+        }
+
+        QJsonArray models = doc.object().value(QStringLiteral("models")).toArray();
+        if (models.isEmpty()) {
+            m_statusLabel->setText(QStringLiteral("No models installed. Pull one with: ollama pull <model>"));
+            return;
+        }
+
+        QStringList names;
+        for (const auto &m : models) {
+            QString name = m.toObject().value(QStringLiteral("name")).toString();
+            if (!name.isEmpty()) {
+                names << name;
+                m_localCombo->addItem(name, name);
+            }
+        }
+        m_statusLabel->setText(QStringLiteral("Found %1 local model(s)").arg(names.size()));
+    });
+}
+
+void KcmAiAssistant::selectModelInCombos(const QString &model, const QString &source)
+{
+    if (source == QStringLiteral("local")) {
+        m_radioLocal->setChecked(true);
+        m_cloudCombo->hide();
+        m_customModelEdit->hide();
+        m_localCombo->show();
+        m_customVisible = false;
+
+        int idx = m_localCombo->findData(model);
+        if (idx >= 0) {
+            m_localCombo->setCurrentIndex(idx);
+        } else {
+            m_localCombo->addItem(model, model);
+            m_localCombo->setCurrentIndex(m_localCombo->count() - 1);
+        }
+    } else {
+        m_radioCloud->setChecked(true);
+        m_localCombo->hide();
+        m_cloudCombo->show();
+        m_customVisible = false;
+
+        int idx = m_cloudCombo->findData(model);
+        if (idx >= 0) {
+            m_cloudCombo->setCurrentIndex(idx);
+            m_customModelEdit->hide();
+        } else {
+            int customIdx = m_cloudCombo->findData(QStringLiteral("__custom__"));
+            if (customIdx >= 0) m_cloudCombo->setCurrentIndex(customIdx);
+            m_customModelEdit->setText(model);
+            m_customModelEdit->show();
+            m_customVisible = true;
         }
     }
 }
@@ -161,6 +219,7 @@ void KcmAiAssistant::addInstalledModels(const QStringList &models)
 void KcmAiAssistant::loadConfig()
 {
     QString model = QStringLiteral("glm-5.1:cloud");
+    QString modelSource = QStringLiteral("cloud");
     QString launchMode = QStringLiteral("model");
     QString extraFlags;
 
@@ -176,24 +235,15 @@ void KcmAiAssistant::loadConfig()
                 QString key = match.captured(1);
                 QString val = match.captured(2).trimmed();
                 if (key == QStringLiteral("MODEL")) model = val;
+                else if (key == QStringLiteral("MODEL_SOURCE")) modelSource = val;
                 else if (key == QStringLiteral("LAUNCH_MODE")) launchMode = val;
                 else if (key == QStringLiteral("EXTRA_FLAGS")) extraFlags = val;
             }
         }
     }
 
-    int idx = m_modelCombo->findData(model);
-    if (idx >= 0) {
-        m_modelCombo->setCurrentIndex(idx);
-        m_customModelEdit->hide();
-        m_customVisible = false;
-    } else {
-        int customIdx = m_modelCombo->findData(QStringLiteral("__custom__"));
-        if (customIdx >= 0) m_modelCombo->setCurrentIndex(customIdx);
-        m_customModelEdit->setText(model);
-        m_customModelEdit->show();
-        m_customVisible = true;
-    }
+    queryLocalModels();
+    selectModelInCombos(model, modelSource);
 
     if (launchMode == QStringLiteral("raw"))
         m_radioRaw->setChecked(true);
@@ -203,7 +253,6 @@ void KcmAiAssistant::loadConfig()
         m_radioModel->setChecked(true);
 
     m_extraFlagsEdit->setText(extraFlags);
-
     setNeedsSave(false);
 }
 
@@ -215,13 +264,18 @@ void KcmAiAssistant::load()
 void KcmAiAssistant::save()
 {
     QString model;
-    if (m_modelCombo->currentData().toString() == QStringLiteral("__custom__")) {
-        model = m_customModelEdit->text().trimmed();
+    QString modelSource;
+
+    if (m_radioLocal->isChecked()) {
+        modelSource = QStringLiteral("local");
+        model = m_localCombo->currentData().toString();
     } else {
-        QString d = m_modelCombo->currentData().toString();
-        if (d.startsWith(QStringLiteral("installed:")))
-            d = d.mid(QStringLiteral("installed:").length());
-        model = d;
+        modelSource = QStringLiteral("cloud");
+        if (m_cloudCombo->currentData().toString() == QStringLiteral("__custom__")) {
+            model = m_customModelEdit->text().trimmed();
+        } else {
+            model = m_cloudCombo->currentData().toString();
+        }
     }
 
     if (model.isEmpty()) model = QStringLiteral("glm-5.1:cloud");
@@ -245,15 +299,18 @@ void KcmAiAssistant::save()
         "# AI Assistant Service Menu configuration\n"
         "# Edited via KCM or manually\n"
         "\n"
-        "# Model to use (e.g. \"glm-5.1:cloud\", \"llama3.1:8b\", \"codellama:13b\")\n"
+        "# Model to use (e.g. \"glm-5.1:cloud\", \"llama3.1:8b\")\n"
         "MODEL=%1\n"
         "\n"
+        "# Model source: \"cloud\" or \"local\"\n"
+        "MODEL_SOURCE=%2\n"
+        "\n"
         "# Extra flags passed to opencode (e.g. \"--no-stream\", \"--debug\")\n"
-        "EXTRA_FLAGS=%2\n"
+        "EXTRA_FLAGS=%3\n"
         "\n"
         "# Launch mode: \"model\" = opencode --model <MODEL>, \"raw\" = opencode <EXTRA_FLAGS>, \"default\" = opencode with no flags\n"
-        "LAUNCH_MODE=%3\n"
-    ).arg(model, extraFlags, launchMode);
+        "LAUNCH_MODE=%4\n"
+    ).arg(model, modelSource, extraFlags, launchMode);
 
     f.close();
     setNeedsSave(false);
@@ -261,21 +318,42 @@ void KcmAiAssistant::save()
 
 void KcmAiAssistant::defaults()
 {
-    int idx = m_modelCombo->findData(QStringLiteral("glm-5.1:cloud"));
-    if (idx >= 0) m_modelCombo->setCurrentIndex(idx);
-    m_customModelEdit->clear();
+    m_radioCloud->setChecked(true);
+    m_cloudCombo->show();
+    m_localCombo->hide();
     m_customModelEdit->hide();
     m_customVisible = false;
+
+    int idx = m_cloudCombo->findData(QStringLiteral("glm-5.1:cloud"));
+    if (idx >= 0) m_cloudCombo->setCurrentIndex(idx);
+    m_customModelEdit->clear();
     m_radioModel->setChecked(true);
     m_extraFlagsEdit->clear();
     setNeedsSave(true);
 }
 
-void KcmAiAssistant::onModelChanged(int index)
+void KcmAiAssistant::onSourceChanged(int id, bool checked)
+{
+    if (!checked) return;
+
+    if (id == 0) {
+        m_cloudCombo->show();
+        m_localCombo->hide();
+        if (m_customVisible) m_customModelEdit->show();
+    } else {
+        m_cloudCombo->hide();
+        m_customModelEdit->hide();
+        m_localCombo->show();
+    }
+
+    onChanged();
+}
+
+void KcmAiAssistant::onCloudModelChanged(int index)
 {
     Q_UNUSED(index)
 
-    QString data = m_modelCombo->currentData().toString();
+    QString data = m_cloudCombo->currentData().toString();
     bool isCustom = (data == QStringLiteral("__custom__"));
 
     if (isCustom && !m_customVisible) {
@@ -305,7 +383,7 @@ void KcmAiAssistant::onDetectInstalled()
         m_detectButton->setEnabled(true);
 
         if (reply->error() != QNetworkReply::NoError) {
-            m_statusLabel->setText(QStringLiteral("Ollama not running or not installed. Start it with: ollama serve"));
+            m_statusLabel->setText(QStringLiteral("Ollama not running or not installed. Start with: ollama serve"));
             return;
         }
 
@@ -322,14 +400,25 @@ void KcmAiAssistant::onDetectInstalled()
             return;
         }
 
+        QString currentLocal = m_localCombo->currentData().toString();
+        m_localCombo->clear();
+        m_localCombo->addItem(QStringLiteral("(no model selected)"), QString());
+
         QStringList names;
         for (const auto &m : models) {
             QString name = m.toObject().value(QStringLiteral("name")).toString();
-            if (!name.isEmpty()) names << name;
+            if (!name.isEmpty()) {
+                names << name;
+                m_localCombo->addItem(name, name);
+            }
         }
 
-        addInstalledModels(names);
-        m_statusLabel->setText(QStringLiteral("Found %1 installed model(s)").arg(names.size()));
+        if (!currentLocal.isEmpty()) {
+            int idx = m_localCombo->findData(currentLocal);
+            if (idx >= 0) m_localCombo->setCurrentIndex(idx);
+        }
+
+        m_statusLabel->setText(QStringLiteral("Found %1 local model(s)").arg(names.size()));
     });
 }
 

@@ -11,8 +11,11 @@ if [ ! -f "${CONFIG_FILE}" ]; then
 # AI Assistant Service Menu configuration
 # Edited via config.sh or manually
 
-# Model to use (e.g. "glm-5.1:cloud", "llama3.1:8b", "codellama:13b")
+# Model to use (e.g. "glm-5.1:cloud", "llama3.1:8b")
 MODEL=glm-5.1:cloud
+
+# Model source: "cloud" or "local"
+MODEL_SOURCE=cloud
 
 # Extra flags passed to opencode (e.g. "--no-stream", "--debug")
 EXTRA_FLAGS=
@@ -128,65 +131,51 @@ dialog_combolist() {
 }
 
 show_main_menu() {
-    local current="Current: Model=${MODEL}  Mode=${LAUNCH_MODE}  Flags=${EXTRA_FLAGS:-none}"
+    local current="Current: Model=${MODEL}  Source=${MODEL_SOURCE:-cloud}  Mode=${LAUNCH_MODE}"
     dialog_menu "AI Assistant Configuration" "${current}" \
-        "change-model" "Change Model (cloud or local)" \
-        "custom-model" "Enter custom model name" \
-        "launch-mode"  "Change launch mode" \
-        "extra-flags" "Set extra opencode flags" \
-        "view-config" "Open config file in editor" \
-        "reset"       "Reset all settings to defaults"
-}
-
-pick_model_category() {
-    dialog_menu "Pick Model Category" "Choose a model category:" \
-        "cloud"          "Cloud models (OpenAI, Anthropic, Google...)" \
-        "ollama-popular" "Popular local Ollama models" \
-        "ollama-coding"  "Code-focused Ollama models" \
-        "ollama-all"     "All locally installed Ollama models"
+        "change-model"   "Change model (cloud or local)" \
+        "model-source"   "Switch cloud/local source" \
+        "launch-mode"    "Change launch mode" \
+        "extra-flags"    "Set extra opencode flags" \
+        "view-config"    "Open config file in editor" \
+        "reset"          "Reset all settings to defaults"
 }
 
 pick_cloud_model() {
-    dialog_combolist "Cloud Models" "Select a cloud model:" \
-        "glm-5.1:cloud" \
-        "gpt-4o" \
-        "gpt-4o-mini" \
-        "o1" \
-        "o3-mini" \
-        "claude-sonnet-4-20250514" \
-        "claude-haiku-4-20250514" \
-        "gemini-2.5-pro" \
-        "gemini-2.5-flash" \
-        "deepseek-chat" \
-        "deepseek-reasoner"
+    dialog_combolist "Ollama Cloud Models" "Select a cloud model:" \
+        "glm-5.1" \
+        "minimax-m2.7" \
+        "gemma4" \
+        "qwen3.5" \
+        "qwen3-coder-next" \
+        "ministral-3" \
+        "devstral-small-2" \
+        "nemotron-3-super" \
+        "qwen3-next" \
+        "glm-5" \
+        "kimi-k2.5" \
+        "rnj-1" \
+        "nemotron-3-nano" \
+        "minimax-m2.5" \
+        "devstral-2" \
+        "cogito-2.1" \
+        "gemini-3-flash-preview" \
+        "glm-4.7" \
+        "deepseek-v3.2" \
+        "minimax-m2" \
+        "minimax-m2.1" \
+        "kimi-k2-thinking" \
+        "mistral-large-3" \
+        "gpt-oss" \
+        "qwen3-vl" \
+        "qwen3-coder" \
+        "deepseek-v3.1" \
+        "glm-4.6" \
+        "kimi-k2" \
+        "gemma3"
 }
 
-pick_ollama_popular() {
-    dialog_combolist "Popular Ollama Models" "Select a model:" \
-        "llama3.1:8b" \
-        "llama3.1:70b" \
-        "llama3.2:3b" \
-        "llama3.3:70b" \
-        "mistral:7b" \
-        "mistral-nemo:12b" \
-        "phi3:mini" \
-        "gemma2:9b" \
-        "qwen2.5:7b" \
-        "codestral:22b"
-}
-
-pick_ollama_coding() {
-    dialog_combolist "Coding Ollama Models" "Select a model:" \
-        "codellama:13b" \
-        "codellama:34b" \
-        "deepseek-coder-v2:16b" \
-        "starcoder2:7b" \
-        "qwen2.5-coder:7b" \
-        "qwen2.5-coder:32b" \
-        "codegemma:7b"
-}
-
-pick_ollama_installed() {
+pick_local_model() {
     local models
     models=$(curl -sf http://localhost:11434/api/tags 2>/dev/null | python3 -c "
 import sys, json
@@ -198,7 +187,7 @@ except: pass
 " 2>/dev/null) || true
 
     if [ -z "${models}" ]; then
-        dialog_error "No Models Found" "No Ollama models found. Is Ollama running?\n\nInstall models with: ollama pull <model>"
+        dialog_error "No Models Found" "No Ollama models found or Ollama not running.\n\nInstall models with: ollama pull <model>"
         echo "__CANCEL__"
         return
     fi
@@ -208,7 +197,19 @@ except: pass
         items+=("${model}")
     done <<< "${models}"
 
-    dialog_combolist "Installed Ollama Models" "Select an installed model:" "${items[@]}"
+    dialog_combolist "Local Ollama Models" "Select an installed model:" "${items[@]}"
+}
+
+pick_model_source() {
+    local cloud_on="off" local_on="off"
+    case "${MODEL_SOURCE:-cloud}" in
+        cloud) cloud_on="on" ;;
+        local) local_on="on" ;;
+    esac
+
+    dialog_radiolist "Model Source" "Where should the model come from?" \
+        "cloud" "Ollama cloud models" "${cloud_on}" \
+        "local" "Locally installed Ollama models" "${local_on}"
 }
 
 pick_launch_mode() {
@@ -227,15 +228,19 @@ pick_launch_mode() {
 
 save_config() {
     local model="${1}"
-    local launch_mode="${2}"
-    local extra_flags="${3}"
+    local model_source="${2}"
+    local launch_mode="${3}"
+    local extra_flags="${4}"
 
     cat > "${CONFIG_FILE}" << EOF
 # AI Assistant Service Menu configuration
 # Edited via config.sh or manually
 
-# Model to use (e.g. "glm-5.1:cloud", "llama3.1:8b", "codellama:13b")
+# Model to use (e.g. "glm-5.1:cloud", "llama3.1:8b")
 MODEL=${model}
+
+# Model source: "cloud" or "local"
+MODEL_SOURCE=${model_source}
 
 # Extra flags passed to opencode (e.g. "--no-stream", "--debug")
 EXTRA_FLAGS=${extra_flags}
@@ -244,7 +249,7 @@ EXTRA_FLAGS=${extra_flags}
 LAUNCH_MODE=${launch_mode}
 EOF
 
-    dialog_info "Saved" "Configuration saved:\n\n  Model: ${model}\n  Launch mode: ${launch_mode}\n  Extra flags: ${extra_flags:-none}"
+    dialog_info "Saved" "Configuration saved:\n\n  Model: ${model}\n  Source: ${model_source}\n  Launch mode: ${launch_mode}\n  Extra flags: ${extra_flags:-none}"
 }
 
 while true; do
@@ -253,36 +258,38 @@ while true; do
     case "${ACTION}" in
         "change-model"|__CANCEL__)
             [ "${ACTION}" = "__CANCEL__" ] && exit 0
-            CATEGORY="$(pick_model_category)"
-            case "${CATEGORY}" in
-                cloud)          NEW_MODEL="$(pick_cloud_model)" ;;
-                ollama-popular) NEW_MODEL="$(pick_ollama_popular)" ;;
-                ollama-coding)  NEW_MODEL="$(pick_ollama_coding)" ;;
-                ollama-all)     NEW_MODEL="$(pick_ollama_installed)" ;;
-                *)              continue ;;
-            esac
-            [ "${NEW_MODEL}" = "__CANCEL__" ] && continue
-            save_config "${NEW_MODEL}" "${LAUNCH_MODE}" "${EXTRA_FLAGS}"
-            source "${CONFIG_FILE}"
-            ;;
-        "custom-model")
-            NEW_MODEL="$(dialog_input "Custom Model" "Enter model name (e.g. glm-5.1:cloud, llama3.1:8b):" "${MODEL}")"
+            if [ "${MODEL_SOURCE:-cloud}" = "local" ]; then
+                NEW_MODEL="$(pick_local_model)"
+            else
+                NEW_MODEL="$(pick_cloud_model)"
+                [ "${NEW_MODEL}" = "__CANCEL__" ] && continue
+                if [ -n "${NEW_MODEL}" ]; then
+                    NEW_MODEL="${NEW_MODEL}:cloud"
+                fi
+            fi
             [ "${NEW_MODEL}" = "__CANCEL__" ] && continue
             [ -z "${NEW_MODEL}" ] && continue
-            save_config "${NEW_MODEL}" "${LAUNCH_MODE}" "${EXTRA_FLAGS}"
+            save_config "${NEW_MODEL}" "${MODEL_SOURCE:-cloud}" "${LAUNCH_MODE}" "${EXTRA_FLAGS}"
+            source "${CONFIG_FILE}"
+            ;;
+        "model-source")
+            NEW_SOURCE="$(pick_model_source)"
+            [ "${NEW_SOURCE}" = "__CANCEL__" ] && continue
+            [ -z "${NEW_SOURCE}" ] && continue
+            save_config "${MODEL}" "${NEW_SOURCE}" "${LAUNCH_MODE}" "${EXTRA_FLAGS}"
             source "${CONFIG_FILE}"
             ;;
         "launch-mode")
             NEW_MODE="$(pick_launch_mode)"
             [ "${NEW_MODE}" = "__CANCEL__" ] && continue
             [ -z "${NEW_MODE}" ] && continue
-            save_config "${MODEL}" "${NEW_MODE}" "${EXTRA_FLAGS}"
+            save_config "${MODEL}" "${MODEL_SOURCE:-cloud}" "${NEW_MODE}" "${EXTRA_FLAGS}"
             source "${CONFIG_FILE}"
             ;;
         "extra-flags")
             NEW_FLAGS="$(dialog_input "Extra Flags" "Extra flags passed to opencode (e.g. --no-stream --debug):" "${EXTRA_FLAGS}")"
             [ "${NEW_FLAGS}" = "__CANCEL__" ] && continue
-            save_config "${MODEL}" "${LAUNCH_MODE}" "${NEW_FLAGS}"
+            save_config "${MODEL}" "${MODEL_SOURCE:-cloud}" "${LAUNCH_MODE}" "${NEW_FLAGS}"
             source "${CONFIG_FILE}"
             ;;
         "view-config")
@@ -305,8 +312,11 @@ while true; do
 # AI Assistant Service Menu configuration
 # Edited via config.sh or manually
 
-# Model to use (e.g. "glm-5.1:cloud", "llama3.1:8b", "codellama:13b")
+# Model to use (e.g. "glm-5.1:cloud", "llama3.1:8b")
 MODEL=glm-5.1:cloud
+
+# Model source: "cloud" or "local"
+MODEL_SOURCE=cloud
 
 # Extra flags passed to opencode (e.g. "--no-stream", "--debug")
 EXTRA_FLAGS=
