@@ -11,6 +11,6 @@ Icon=lambda-ai
 Exec=%h/.local/bin/terminal-launch.sh %f
 
 [Desktop Action configureAssistant]
-Name=Configure AI Assistant
+Name=Settings: AI Assistant
 Icon=configure
 Exec=%h/.local/bin/zenity-config.sh
