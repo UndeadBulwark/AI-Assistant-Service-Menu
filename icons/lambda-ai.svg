@@ -1,22 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
   <defs>
-    <linearGradient id="lambdaGrad" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#89b4fa"/>
       <stop offset="100%" stop-color="#74c7ec"/>
     </linearGradient>
   </defs>
   <rect width="48" height="48" rx="8" fill="#1e1e2e"/>
-  <text x="20" y="36" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="34" font-weight="bold" fill="url(#lambdaGrad)">λ</text>
-  <g transform="translate(30,30) scale(0.6)">
-    <path d="M8 14.5l-1.2-4.3 3.5-2.8 4 1.8L16 14.5 14.8 18 16 24l-4.3-1-3.5 3L8 14.5z" fill="none" stroke="#a6adc8" stroke-width="1.5" stroke-linejoin="round"/>
-    <circle cx="12" cy="12" r="3" fill="none" stroke="#a6adc8" stroke-width="1.5"/>
-    <line x1="12" y1="1" x2="12" y2="4" stroke="#a6adc8" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="12" y1="20" x2="12" y2="23" stroke="#a6adc8" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="1" y1="12" x2="4" y2="12" stroke="#a6adc8" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="20" y1="12" x2="23" y2="12" stroke="#a6adc8" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="4.2" y1="4.2" x2="6.3" y2="6.3" stroke="#a6adc8" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="17.7" y1="17.7" x2="19.8" y2="19.8" stroke="#a6adc8" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="19.8" y1="4.2" x2="17.7" y2="6.3" stroke="#a6adc8" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="6.3" y1="17.7" x2="4.2" y2="19.8" stroke="#a6adc8" stroke-width="1.5" stroke-linecap="round"/>
-  </g>
+  <text x="24" y="36" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="36" font-weight="bold" fill="url(#g)">λ</text>
 </svg>

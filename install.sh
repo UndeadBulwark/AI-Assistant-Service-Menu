@@ -75,10 +75,12 @@ else
     echo "  -> ${CONFIG_DIR}/config.conf (already exists, kept)"
 fi
 
-echo "Installing lambda icon..."
+echo "Installing icons..."
 mkdir -p "${ICON_DIR}"
 cp "${SCRIPT_DIR}/icons/lambda-ai.svg" "${ICON_DIR}/lambda-ai.svg"
 echo "  -> ${ICON_DIR}/lambda-ai.svg"
+cp "${SCRIPT_DIR}/icons/lambda-cog.svg" "${ICON_DIR}/lambda-cog.svg"
+echo "  -> ${ICON_DIR}/lambda-cog.svg"
 
 if command -v gtk-update-icon-cache &>/dev/null; then
     gtk-update-icon-cache -f "${HOME}/.local/share/icons/hicolor" &>/dev/null || true

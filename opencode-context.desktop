@@ -12,5 +12,5 @@ Exec=%h/.local/bin/terminal-launch.sh %f
 
 [Desktop Action zz_configure]
 Name=Configure AI Assistant
-Icon=configure
+Icon=lambda-cog
 Exec=%h/.local/bin/ai-config.sh
