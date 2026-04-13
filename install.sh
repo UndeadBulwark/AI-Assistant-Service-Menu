@@ -171,8 +171,19 @@ mkdir -p "${ICON_DIR}"
 cp "${SCRIPT_DIR}/icons/lambda-ai.svg" "${ICON_DIR}/lambda-ai.svg"
 echo "  -> ${ICON_DIR}/lambda-ai.svg"
 
+HICON_DIR="${HOME}/.local/share/icons/hicolor"
+if [ ! -f "${HICON_DIR}/index.theme" ]; then
+    mkdir -p "${HICON_DIR}"
+    cat > "${HICON_DIR}/index.theme" << 'ICONINDEX'
+[Icon Theme]
+Name=hicolor
+Directories=scalable/apps
+ICONINDEX
+    echo "  -> Created ${HICON_DIR}/index.theme"
+fi
+
 if command -v gtk-update-icon-cache &>/dev/null; then
-    gtk-update-icon-cache -f "${HOME}/.local/share/icons/hicolor" &>/dev/null || true
+    gtk-update-icon-cache -f "${HICON_DIR}" &>/dev/null || true
 fi
 
 echo "Installing KDE service menu..."
