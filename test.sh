@@ -22,6 +22,15 @@ check_executable() {
     fi
 }
 
+check_cpp() {
+    if [ -f "${SCRIPT_DIR}/$1" ]; then
+        echo "  [OK] $1"
+    else
+        echo "  [MISSING] $1"
+        ERRORS=$((ERRORS + 1))
+    fi
+}
+
 echo "=== AI Assistant Service Menu — Self-Test ==="
 echo ""
 echo "Checking files..."
@@ -35,8 +44,15 @@ echo "Checking scripts..."
 check_executable "terminal-launch.sh"
 check_executable "opencode-launch.sh"
 check_executable "config.sh"
+check_executable "kcm-launch.sh"
 check_executable "install.sh"
 check_executable "uninstall.sh"
+echo ""
+echo "Checking KCM sources..."
+check_cpp "kcm/CMakeLists.txt"
+check_cpp "kcm/kcm_ai_assistant.h"
+check_cpp "kcm/kcm_ai_assistant.cpp"
+check_cpp "kcm/kcm_ai_assistant.json"
 echo ""
 
 if [ "${ERRORS}" -eq 0 ]; then

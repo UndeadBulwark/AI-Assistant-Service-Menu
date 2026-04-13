@@ -1,0 +1,11 @@
+{
+    "KPlugin": {
+        "Description": "Configure AI Assistant Service Menu",
+        "Icon": "lambda-ai",
+        "Name": "AI Assistant",
+        "FormFactors": ["desktop"]
+    },
+    "X-KDE-Keywords": "ai,assistant,opencode,ollama,model,llm",
+    "X-KDE-System-Settings-Parent-Category": "applications",
+    "X-KDE-ParentApp": "systemsettings"
+}
