@@ -82,6 +82,16 @@ Each terminal has its own `--working-directory` and `-e` syntax handled correctl
 
 If Ollama isn't running, it tries to start it via systemd, then falls back to `ollama serve`.
 
+### Default model
+
+opencode is launched with `--model glm-5.1:cloud` by default. Override with the `OPENCODE_MODEL` env var:
+
+```bash
+export OPENCODE_MODEL="llama3.1:8b"
+```
+
+Or pass arguments directly — if you pass any args to the service menu, they replace the default model flag entirely.
+
 ## Self-test
 
 ```bash

@@ -47,4 +47,10 @@ OPENCODE="$(find_opencode)" || {
     exit 1
 }
 
-exec "${OPENCODE}" "$@"
+OPENCODE_MODEL="${OPENCODE_MODEL:-glm-5.1:cloud}"
+
+if [ $# -gt 0 ]; then
+    exec "${OPENCODE}" "$@"
+else
+    exec "${OPENCODE}" --model "${OPENCODE_MODEL}"
+fi
