@@ -172,12 +172,53 @@ cp "${SCRIPT_DIR}/icons/lambda-ai.svg" "${ICON_DIR}/lambda-ai.svg"
 echo "  -> ${ICON_DIR}/lambda-ai.svg"
 
 HICON_DIR="${HOME}/.local/share/icons/hicolor"
+ICONS_SRC="${SCRIPT_DIR}/icons"
+
+for size in 16 22 24 32 48 64 128; do
+    dir="${HICON_DIR}/${size}x${size}/apps"
+    mkdir -p "${dir}"
+    if command -v rsvg-convert &>/dev/null; then
+        rsvg-convert -w ${size} -h ${size} "${ICONS_SRC}/lambda-ai.svg" -o "${dir}/lambda-ai.png" 2>/dev/null && continue
+    fi
+    if command -v inkscape &>/dev/null; then
+        inkscape -w ${size} -h ${size} "${ICONS_SRC}/lambda-ai.svg" -o "${dir}/lambda-ai.png" 2>/dev/null
+    fi
+done
+
 if [ ! -f "${HICON_DIR}/index.theme" ]; then
     mkdir -p "${HICON_DIR}"
     cat > "${HICON_DIR}/index.theme" << 'ICONINDEX'
 [Icon Theme]
 Name=hicolor
-Directories=scalable/apps
+Directories=16x16/apps,22x22/apps,24x24/apps,32x32/apps,48x48/apps,64x64/apps,128x128/apps,scalable/apps
+
+[16x16/apps]
+Size=16
+Type=Fixed
+
+[22x22/apps]
+Size=22
+Type=Fixed
+
+[24x24/apps]
+Size=24
+Type=Fixed
+
+[32x32/apps]
+Size=32
+Type=Fixed
+
+[48x48/apps]
+Size=48
+Type=Fixed
+
+[64x64/apps]
+Size=64
+Type=Fixed
+
+[128x128/apps]
+Size=128
+Type=Fixed
 
 [scalable/apps]
 Size=64
