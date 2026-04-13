@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Service
+ServiceTypes=KonqPopupMenu/Plugin
+MimeType=inode/directory;
+Actions=opencodeHere;
+X-KDE-Priority=TopLevel
+
+[Desktop Action opencodeHere]
+Name=Open AI Assistant Here
+Icon=utilities-terminal
+Exec=/usr/bin/konsole --workdir %f -e %h/.local/bin/opencode-launch.sh

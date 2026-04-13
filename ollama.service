@@ -1,0 +1,14 @@
+[Unit]
+Description=Ollama LLM server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/ollama serve
+Restart=on-failure
+RestartSec=5
+Environment=OLLAMA_HOST=0.0.0.0
+Environment=OLLAMA_ORIGINS=*
+
+[Install]
+WantedBy=default.target
