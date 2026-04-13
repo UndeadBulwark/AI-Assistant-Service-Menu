@@ -50,16 +50,16 @@ echo "  -> ${INSTALL_DIR}/opencode-launch.sh"
 cp "${SCRIPT_DIR}/terminal-launch.sh" "${INSTALL_DIR}/terminal-launch.sh"
 chmod +x "${INSTALL_DIR}/terminal-launch.sh"
 echo "  -> ${INSTALL_DIR}/terminal-launch.sh"
-cp "${SCRIPT_DIR}/zenity-config.sh" "${INSTALL_DIR}/zenity-config.sh"
-chmod +x "${INSTALL_DIR}/zenity-config.sh"
-echo "  -> ${INSTALL_DIR}/zenity-config.sh"
+cp "${SCRIPT_DIR}/config.sh" "${INSTALL_DIR}/ai-config.sh"
+chmod +x "${INSTALL_DIR}/ai-config.sh"
+echo "  -> ${INSTALL_DIR}/ai-config.sh"
 
 echo "Installing config directory..."
 mkdir -p "${CONFIG_DIR}"
 if [ ! -f "${CONFIG_DIR}/config.conf" ]; then
     cat > "${CONFIG_DIR}/config.conf" << 'DEFAULTS'
 # AI Assistant Service Menu configuration
-# Edited via zenity-config.sh or manually
+# Edited via ai-config.sh or manually
 
 # Model to use (e.g. "glm-5.1:cloud", "llama3.1:8b", "codellama:13b")
 MODEL=glm-5.1:cloud
@@ -129,7 +129,7 @@ echo "Right-click any folder in Dolphin:"
 echo "  'Open AI Assistant Here'  — launch opencode in that directory"
 echo "  'Configure AI Assistant'  — change model, launch mode, flags"
 echo ""
-echo "Or configure from terminal: zenity-config.sh"
+echo "Or configure from terminal: ai-config.sh"
 echo ""
 if [ "${INSTALL_OLLAMA_SERVICE}" = true ]; then
     echo "Ollama will auto-start on login."
