@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Test that all files exist and scripts are valid bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,6 +31,7 @@ check_file "LICENSE"
 check_file "README.md"
 echo ""
 echo "Checking scripts..."
+check_executable "terminal-launch.sh"
 check_executable "opencode-launch.sh"
 check_executable "install.sh"
 check_executable "uninstall.sh"

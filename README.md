@@ -2,19 +2,22 @@
 
 KDE Dolphin context menu that lets you right-click any folder and open an AI assistant (opencode) in that directory. Includes Ollama auto-start via systemd.
 
+**Terminal-agnostic** — automatically detects your terminal emulator (Konsole, GNOME Terminal, Alacritty, Kitty, foot, WezTerm, Tilix, xfce4-terminal, xterm, and more).
+
 ## What it does
 
 - Adds **"Open AI Assistant Here"** to the KDE Dolphin right-click menu for folders
-- Opens Konsole in the selected directory and launches [opencode](https://github.com/anomalyco/opencode)
+- Opens your terminal in the selected directory and launches [opencode](https://github.com/anomalyco/opencode)
+- Auto-detects your terminal emulator — works on KDE, GNOME, or any desktop
 - Auto-starts Ollama as a systemd user service (if installed)
 - Falls back to on-demand Ollama start if the service isn't running
-- Distro-agnostic — no hardcoded paths, works on any Linux with KDE Plasma
+- Distro-agnostic — no hardcoded paths, works on any Linux
 
 ## Requirements
 
 - KDE Plasma (Dolphin file manager)
+- A terminal emulator (auto-detected)
 - [opencode](https://github.com/anomalyco/opencode) installed and in PATH
-- Konsole (KDE terminal)
 - [Ollama](https://ollama.com) (optional — for local LLM support)
 
 ## Install
@@ -34,17 +37,40 @@ cd AI-Assistant-Service-Menu
 ./uninstall.sh
 ```
 
-Removes the context menu entry, launch script, and Ollama systemd service. Ollama itself is not removed.
+Removes the context menu entry, launch scripts, and Ollama systemd service. Ollama itself is not removed.
 
 ## Files
 
 | File | Installed to |
 |------|-------------|
+| `terminal-launch.sh` | `~/.local/bin/terminal-launch.sh` |
 | `opencode-launch.sh` | `~/.local/bin/opencode-launch.sh` |
 | `opencode-context.desktop` | `~/.local/share/kio/servicemenus/opencode-context.desktop` |
 | `ollama.service` | `~/.config/systemd/user/ollama.service` |
 
-## How the launch script works
+## How it works
+
+### Terminal detection
+
+`terminal-launch.sh` searches for a terminal emulator in this order:
+
+1. konsole (KDE)
+2. gnome-terminal (GNOME)
+3. alacritty
+4. kitty
+5. foot (Wayland)
+6. wezterm
+7. tilix
+8. xfce4-terminal
+9. mate-terminal
+10. lxterminal
+11. sakura
+12. st
+13. xterm (fallback)
+
+Each terminal has its own `--working-directory` and `-e` syntax handled correctly.
+
+### opencode discovery
 
 `opencode-launch.sh` searches for `opencode` in this order:
 

@@ -40,11 +40,14 @@ else
 fi
 
 echo ""
-echo "Installing launch script..."
+echo "Installing launch scripts..."
 mkdir -p "${INSTALL_DIR}"
 cp "${SCRIPT_DIR}/opencode-launch.sh" "${INSTALL_DIR}/opencode-launch.sh"
 chmod +x "${INSTALL_DIR}/opencode-launch.sh"
 echo "  -> ${INSTALL_DIR}/opencode-launch.sh"
+cp "${SCRIPT_DIR}/terminal-launch.sh" "${INSTALL_DIR}/terminal-launch.sh"
+chmod +x "${INSTALL_DIR}/terminal-launch.sh"
+echo "  -> ${INSTALL_DIR}/terminal-launch.sh"
 
 echo "Installing KDE service menu..."
 mkdir -p "${SERVICE_MENU_DIR}"
@@ -56,7 +59,7 @@ if [ "${INSTALL_OLLAMA_SERVICE}" = true ]; then
     fi
 fi
 
-sed "s|%h/.local/bin/opencode-launch.sh|${HOME}/.local/bin/opencode-launch.sh|g" \
+sed "s|%h|${HOME}|g" \
     "${SCRIPT_DIR}/opencode-context.desktop" > "${SERVICE_MENU_DIR}/opencode-context.desktop"
 echo "  -> ${SERVICE_MENU_DIR}/opencode-context.desktop"
 
@@ -89,9 +92,14 @@ echo "=== Installation complete! ==="
 echo ""
 echo "Right-click any folder in Dolphin → 'Open AI Assistant Here'"
 echo ""
+DETECTED_TERMINAL="$(bash -c 'source "${HOME}/.local/bin/terminal-launch.sh" 2>/dev/null; echo skip' 2>/dev/null || true)"
+echo "Terminal detection will auto-detect your terminal emulator."
+echo "Supported: konsole, gnome-terminal, alacritty, kitty, foot, wezterm, tilix, xfce4-terminal, xterm, and more."
 if [ "${INSTALL_OLLAMA_SERVICE}" = true ]; then
+    echo ""
     echo "Ollama will auto-start on login."
     echo "Manage with: systemctl --user start/stop/status ollama.service"
 else
+    echo ""
     echo "Note: Install Ollama from https://ollama.com for LLM support."
 fi

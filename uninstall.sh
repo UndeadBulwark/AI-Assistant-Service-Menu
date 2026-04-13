@@ -8,9 +8,11 @@ SYSTEMD_DIR="${HOME}/.config/systemd/user"
 echo "=== AI Assistant Service Menu Uninstaller ==="
 echo ""
 
-echo "Removing launch script..."
+echo "Removing launch scripts..."
 rm -f "${INSTALL_DIR}/opencode-launch.sh"
 echo "  -> Removed ${INSTALL_DIR}/opencode-launch.sh"
+rm -f "${INSTALL_DIR}/terminal-launch.sh"
+echo "  -> Removed ${INSTALL_DIR}/terminal-launch.sh"
 
 echo "Removing KDE service menu..."
 rm -f "${SERVICE_MENU_DIR}/opencode-context.desktop"
