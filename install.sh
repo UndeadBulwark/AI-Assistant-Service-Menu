@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_DIR="${HOME}/.local/bin"
 SERVICE_MENU_DIR="${HOME}/.local/share/kio/servicemenus"
 SYSTEMD_DIR="${HOME}/.config/systemd/user"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ai-assistant-menu"
 
 echo "=== AI Assistant Service Menu Installer ==="
 echo ""
@@ -48,6 +49,30 @@ echo "  -> ${INSTALL_DIR}/opencode-launch.sh"
 cp "${SCRIPT_DIR}/terminal-launch.sh" "${INSTALL_DIR}/terminal-launch.sh"
 chmod +x "${INSTALL_DIR}/terminal-launch.sh"
 echo "  -> ${INSTALL_DIR}/terminal-launch.sh"
+cp "${SCRIPT_DIR}/zenity-config.sh" "${INSTALL_DIR}/zenity-config.sh"
+chmod +x "${INSTALL_DIR}/zenity-config.sh"
+echo "  -> ${INSTALL_DIR}/zenity-config.sh"
+
+echo "Installing config directory..."
+mkdir -p "${CONFIG_DIR}"
+if [ ! -f "${CONFIG_DIR}/config.conf" ]; then
+    cat > "${CONFIG_DIR}/config.conf" << 'DEFAULTS'
+# AI Assistant Service Menu configuration
+# Edited via zenity-config.sh or manually
+
+# Model to use (e.g. "glm-5.1:cloud", "llama3.1:8b", "codellama:13b")
+MODEL=glm-5.1:cloud
+
+# Extra flags passed to opencode (e.g. "--no-stream", "--debug")
+EXTRA_FLAGS=
+
+# Launch mode: "model" = opencode --model <MODEL>, "raw" = opencode <EXTRA_FLAGS>, "default" = opencode with no flags
+LAUNCH_MODE=model
+DEFAULTS
+    echo "  -> ${CONFIG_DIR}/config.conf (created with defaults)"
+else
+    echo "  -> ${CONFIG_DIR}/config.conf (already exists, kept)"
+fi
 
 echo "Installing KDE service menu..."
 mkdir -p "${SERVICE_MENU_DIR}"
@@ -90,16 +115,15 @@ fi
 echo ""
 echo "=== Installation complete! ==="
 echo ""
-echo "Right-click any folder in Dolphin → 'Open AI Assistant Here'"
+echo "Right-click any folder in Dolphin:"
+echo "  'Open AI Assistant Here'  — launch opencode in that directory"
+echo "  'Configure AI Assistant'   — change model, launch mode, flags"
 echo ""
-DETECTED_TERMINAL="$(bash -c 'source "${HOME}/.local/bin/terminal-launch.sh" 2>/dev/null; echo skip' 2>/dev/null || true)"
-echo "Terminal detection will auto-detect your terminal emulator."
-echo "Supported: konsole, gnome-terminal, alacritty, kitty, foot, wezterm, tilix, xfce4-terminal, xterm, and more."
+echo "Or run: zenity-config.sh"
+echo ""
 if [ "${INSTALL_OLLAMA_SERVICE}" = true ]; then
-    echo ""
     echo "Ollama will auto-start on login."
     echo "Manage with: systemctl --user start/stop/status ollama.service"
 else
-    echo ""
     echo "Note: Install Ollama from https://ollama.com for LLM support."
 fi

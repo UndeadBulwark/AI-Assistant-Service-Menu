@@ -47,10 +47,32 @@ OPENCODE="$(find_opencode)" || {
     exit 1
 }
 
-OPENCODE_MODEL="${OPENCODE_MODEL:-glm-5.1:cloud}"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ai-assistant-menu"
+CONFIG_FILE="${CONFIG_DIR}/config.conf"
+
+MODEL="${OPENCODE_MODEL:-glm-5.1:cloud}"
+EXTRA_FLAGS=""
+LAUNCH_MODE="model"
+
+if [ -f "${CONFIG_FILE}" ]; then
+    source "${CONFIG_FILE}"
+fi
 
 if [ $# -gt 0 ]; then
     exec "${OPENCODE}" "$@"
-else
-    exec "${OPENCODE}" --model "${OPENCODE_MODEL}"
 fi
+
+case "${LAUNCH_MODE}" in
+    model)
+        exec "${OPENCODE}" --model "${MODEL}" ${EXTRA_FLAGS}
+        ;;
+    raw)
+        exec "${OPENCODE}" ${EXTRA_FLAGS}
+        ;;
+    default)
+        exec "${OPENCODE}"
+        ;;
+    *)
+        exec "${OPENCODE}" --model "${MODEL}"
+        ;;
+esac

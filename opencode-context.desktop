@@ -2,10 +2,15 @@
 Type=Service
 ServiceTypes=KonqPopupMenu/Plugin
 MimeType=inode/directory;
-Actions=opencodeHere;
+Actions=opencodeHere;configureAssistant;
 X-KDE-Priority=TopLevel
 
 [Desktop Action opencodeHere]
 Name=Open AI Assistant Here
 Icon=utilities-terminal
 Exec=%h/.local/bin/terminal-launch.sh %f
+
+[Desktop Action configureAssistant]
+Name=Configure AI Assistant
+Icon=configure
+Exec=%h/.local/bin/zenity-config.sh
