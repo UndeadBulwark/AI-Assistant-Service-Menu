@@ -31,17 +31,6 @@ find_ollama() {
     return 1
 }
 
-find_terminal_cmd() {
-    local terminals=("konsole" "gnome-terminal" "alacritty" "kitty" "foot" "wezterm" "tilix" "xfce4-terminal" "xterm")
-    for term in "${terminals[@]}"; do
-        if command -v "${term}" &>/dev/null; then
-            echo "${term}"
-            return 0
-        fi
-    done
-    echo "xterm"
-}
-
 if ! OLLAMA_BIN="$(find_ollama)"; then
     echo "Warning: ollama not found. Install it from https://ollama.com"
     echo "The service menu will still be installed but Ollama auto-start will be skipped."
@@ -105,16 +94,8 @@ if [ "${INSTALL_OLLAMA_SERVICE}" = true ]; then
     fi
 fi
 
-TERMINAL_CMD="$(find_terminal_cmd)"
-
-sed -e "s|%h|${HOME}|g" -e "s|konsole --workdir %f|${TERMINAL_CMD} --workdir %f|g" \
+sed "s|%h|${HOME}|g" \
     "${SCRIPT_DIR}/opencode-context.desktop" > "${SERVICE_MENU_DIR}/opencode-context.desktop"
-
-if [ "${TERMINAL_CMD}" = "gnome-terminal" ]; then
-    sed -i 's|gnome-terminal --workdir %f|gnome-terminal --working-directory=%f|' \
-        "${SERVICE_MENU_DIR}/opencode-context.desktop"
-fi
-
 echo "  -> ${SERVICE_MENU_DIR}/opencode-context.desktop"
 
 if [ "${INSTALL_OLLAMA_SERVICE}" = true ]; then
@@ -145,9 +126,8 @@ echo ""
 echo "=== Installation complete! ==="
 echo ""
 echo "Right-click any folder in Dolphin:"
-echo "  1. Open Terminal Here"
-echo "  2. Open AI Assistant Here"
-echo "  3. Configure AI Assistant"
+echo "  'Open AI Assistant Here'  — launch opencode in that directory"
+echo "  'Configure AI Assistant'  — change model, launch mode, flags"
 echo ""
 echo "Or configure from terminal: zenity-config.sh"
 echo ""

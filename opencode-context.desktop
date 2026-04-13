@@ -2,18 +2,13 @@
 Type=Service
 ServiceTypes=KonqPopupMenu/Plugin
 MimeType=inode/directory;
-Actions=openTerminalHere;opencodeHere;configureAssistant;
+Actions=opencodeHere;configureAssistant;
 X-KDE-Priority=TopLevel
-
-[Desktop Action openTerminalHere]
-Name=Open Terminal Here
-Icon=utilities-terminal
-Exec=%h/.local/bin/terminal-launch.sh %f terminal
 
 [Desktop Action opencodeHere]
 Name=Open AI Assistant Here
 Icon=lambda-ai
-Exec=%h/.local/bin/terminal-launch.sh %f opencode
+Exec=%h/.local/bin/terminal-launch.sh %f
 
 [Desktop Action configureAssistant]
 Name=Configure AI Assistant
