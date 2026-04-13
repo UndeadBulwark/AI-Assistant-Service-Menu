@@ -157,6 +157,9 @@ EXTRA_FLAGS=
 
 # Launch mode: "model" = opencode --model <MODEL>, "raw" = opencode <EXTRA_FLAGS>, "default" = opencode with no flags
 LAUNCH_MODE=model
+
+# System prompt: custom instructions for opencode sessions (edit via system-prompt.md)
+# See ~/.config/ai-assistant-menu/system-prompt.md
 DEFAULTS
     echo "  -> ${CONFIG_DIR}/config.conf (created with defaults)"
 else

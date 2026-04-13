@@ -58,6 +58,11 @@ if [ -f "${CONFIG_FILE}" ]; then
     source "${CONFIG_FILE}"
 fi
 
+PROMPT_FILE="${CONFIG_DIR}/system-prompt.md"
+if [ -f "${PROMPT_FILE}" ] && [ -s "${PROMPT_FILE}" ]; then
+    export OPENCODE_CONFIG_CONTENT="{\"instructions\":[\"${PROMPT_FILE}\"]}"
+fi
+
 if [ $# -gt 0 ]; then
     exec "${OPENCODE}" "$@"
 fi

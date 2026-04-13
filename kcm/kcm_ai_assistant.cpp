@@ -20,6 +20,43 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QDir>
+#include <QTextEdit>
+#include <QSpacerItem>
+#include <QMouseEvent>
+#include <QIcon>
+
+DragHandle::DragHandle(QTextEdit *target, QWidget *parent)
+    : QWidget(parent)
+    , m_target(target)
+    , m_startY(0)
+    , m_startHeight(0)
+{
+    setFixedHeight(10);
+    setCursor(Qt::SplitVCursor);
+    setStyleSheet(QStringLiteral(
+        "background-color: palette(mid);"
+        "border: 1px dashed palette(dark);"
+        "margin: 2px 0px;"
+    ));
+}
+
+void DragHandle::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        m_startY = qRound(event->globalPosition().y());
+        m_startHeight = m_target->height();
+    }
+}
+
+void DragHandle::mouseMoveEvent(QMouseEvent *event)
+{
+    if (event->buttons() & Qt::LeftButton) {
+        int delta = qRound(event->globalPosition().y()) - m_startY;
+        int newHeight = qMax(120, m_startHeight + delta);
+        m_target->setMinimumHeight(newHeight);
+        m_target->setMaximumHeight(newHeight);
+    }
+}
 
 K_PLUGIN_CLASS_WITH_JSON(KcmAiAssistant, "kcm_ai_assistant.json")
 
@@ -28,6 +65,10 @@ KcmAiAssistant::KcmAiAssistant(QObject *parent, const KPluginMetaData &data)
     , m_customVisible(false)
 {
     setButtons(Apply | Default);
+
+    widget()->setWindowIcon(QIcon::fromTheme(
+        QStringLiteral("lambda-ai"),
+        QIcon(QStringLiteral(":/icons/lambda-ai.svg"))));
 
     auto *form = new QFormLayout(widget());
     form->setHorizontalSpacing(20);
@@ -49,6 +90,7 @@ KcmAiAssistant::KcmAiAssistant(QObject *parent, const KPluginMetaData &data)
     m_cloudCombo = new QComboBox(widget());
     addCloudModelItems();
     form->addRow(QStringLiteral("Cloud Model:"), m_cloudCombo);
+    m_cloudLabel = qobject_cast<QLabel*>(form->labelForField(m_cloudCombo));
 
     m_customModelEdit = new QLineEdit(widget());
     m_customModelEdit->setPlaceholderText(QStringLiteral("e.g. glm-5.1:cloud, gemma4:26b"));
@@ -56,10 +98,13 @@ KcmAiAssistant::KcmAiAssistant(QObject *parent, const KPluginMetaData &data)
     form->addRow(QString(), m_customModelEdit);
 
     m_localCombo = new QComboBox(widget());
-    m_localCombo->hide();
     form->addRow(QStringLiteral("Local Model:"), m_localCombo);
+    m_localLabel = qobject_cast<QLabel*>(form->labelForField(m_localCombo));
+    m_localCombo->hide();
+    m_localLabel->hide();
 
     m_detectButton = new QPushButton(QStringLiteral("Detect Installed Ollama Models"), widget());
+    m_detectButton->hide();
     form->addRow(QString(), m_detectButton);
 
     m_statusLabel = new QLabel(widget());
@@ -81,6 +126,18 @@ KcmAiAssistant::KcmAiAssistant(QObject *parent, const KPluginMetaData &data)
     m_extraFlagsEdit->setPlaceholderText(QStringLiteral("e.g. --no-stream --debug"));
     form->addRow(QStringLiteral("Extra Flags:"), m_extraFlagsEdit);
 
+    m_systemPromptEdit = new QTextEdit(widget());
+    m_systemPromptEdit->setAcceptRichText(false);
+    m_systemPromptEdit->setPlaceholderText(QStringLiteral("Custom instructions added to every opencode session launched from Dolphin"));
+    m_systemPromptEdit->setMinimumHeight(120);
+    m_systemPromptEdit->setMaximumHeight(120);
+    form->addRow(QStringLiteral("System Prompt:"), m_systemPromptEdit);
+
+    auto *dragHandle = new DragHandle(m_systemPromptEdit, widget());
+    form->addRow(dragHandle);
+
+    form->addItem(new QSpacerItem(0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding));
+
     m_configPath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)
                    + QStringLiteral("/ai-assistant-menu/config.conf");
 
@@ -95,6 +152,8 @@ KcmAiAssistant::KcmAiAssistant(QObject *parent, const KPluginMetaData &data)
     connect(m_launchModeGroup, &QButtonGroup::idToggled, this,
             [this](int, bool) { onChanged(); });
     connect(m_extraFlagsEdit, &QLineEdit::textChanged,
+            this, &KcmAiAssistant::onChanged);
+    connect(m_systemPromptEdit, &QTextEdit::textChanged,
             this, &KcmAiAssistant::onChanged);
     connect(m_detectButton, &QPushButton::clicked,
             this, &KcmAiAssistant::onDetectInstalled);
@@ -151,20 +210,23 @@ void KcmAiAssistant::queryLocalModels()
         m_localCombo->addItem(QStringLiteral("(no model selected)"), QString());
 
         if (reply->error() != QNetworkReply::NoError) {
-            m_statusLabel->setText(QStringLiteral("Ollama not running. Start with: ollama serve"));
+            if (m_radioLocal->isChecked())
+                m_statusLabel->setText(QStringLiteral("Ollama not running. Start with: ollama serve"));
             return;
         }
 
         QJsonParseError err;
         QJsonDocument doc = QJsonDocument::fromJson(reply->readAll(), &err);
         if (err.error != QJsonParseError::NoError || !doc.isObject()) {
-            m_statusLabel->setText(QStringLiteral("Error parsing Ollama response"));
+            if (m_radioLocal->isChecked())
+                m_statusLabel->setText(QStringLiteral("Error parsing Ollama response"));
             return;
         }
 
         QJsonArray models = doc.object().value(QStringLiteral("models")).toArray();
         if (models.isEmpty()) {
-            m_statusLabel->setText(QStringLiteral("No models installed. Pull one with: ollama pull <model>"));
+            if (m_radioLocal->isChecked())
+                m_statusLabel->setText(QStringLiteral("No models installed. Pull one with: ollama pull <model>"));
             return;
         }
 
@@ -176,7 +238,8 @@ void KcmAiAssistant::queryLocalModels()
                 m_localCombo->addItem(name, name);
             }
         }
-        m_statusLabel->setText(QStringLiteral("Found %1 local model(s)").arg(names.size()));
+        if (m_radioLocal->isChecked())
+            m_statusLabel->setText(QStringLiteral("Found %1 local model(s)").arg(names.size()));
     });
 }
 
@@ -184,9 +247,12 @@ void KcmAiAssistant::selectModelInCombos(const QString &model, const QString &so
 {
     if (source == QStringLiteral("local")) {
         m_radioLocal->setChecked(true);
+        m_cloudLabel->hide();
         m_cloudCombo->hide();
         m_customModelEdit->hide();
+        m_localLabel->show();
         m_localCombo->show();
+        m_detectButton->show();
         m_customVisible = false;
 
         int idx = m_localCombo->findData(model);
@@ -198,8 +264,11 @@ void KcmAiAssistant::selectModelInCombos(const QString &model, const QString &so
         }
     } else {
         m_radioCloud->setChecked(true);
-        m_localCombo->hide();
+        m_cloudLabel->show();
         m_cloudCombo->show();
+        m_localLabel->hide();
+        m_localCombo->hide();
+        m_detectButton->hide();
         m_customVisible = false;
 
         int idx = m_cloudCombo->findData(model);
@@ -222,6 +291,7 @@ void KcmAiAssistant::loadConfig()
     QString modelSource = QStringLiteral("cloud");
     QString launchMode = QStringLiteral("model");
     QString extraFlags;
+    QString systemPrompt;
 
     QFile f(m_configPath);
     if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -253,6 +323,14 @@ void KcmAiAssistant::loadConfig()
         m_radioModel->setChecked(true);
 
     m_extraFlagsEdit->setText(extraFlags);
+
+    QString promptPath = QFileInfo(m_configPath).absolutePath() + QStringLiteral("/system-prompt.md");
+    QFile pf(promptPath);
+    if (pf.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        systemPrompt = QTextStream(&pf).readAll();
+    }
+    m_systemPromptEdit->setPlainText(systemPrompt);
+
     setNeedsSave(false);
 }
 
@@ -313,14 +391,31 @@ void KcmAiAssistant::save()
     ).arg(model, modelSource, extraFlags, launchMode);
 
     f.close();
+
+    QString systemPrompt = m_systemPromptEdit->toPlainText();
+    QString promptPath = QFileInfo(m_configPath).absolutePath() + QStringLiteral("/system-prompt.md");
+    if (systemPrompt.isEmpty()) {
+        QFile::remove(promptPath);
+    } else {
+        QFile pf(promptPath);
+        if (pf.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+            QTextStream pout(&pf);
+            pout << systemPrompt;
+            pf.close();
+        }
+    }
+
     setNeedsSave(false);
 }
 
 void KcmAiAssistant::defaults()
 {
     m_radioCloud->setChecked(true);
+    m_cloudLabel->show();
     m_cloudCombo->show();
+    m_localLabel->hide();
     m_localCombo->hide();
+    m_detectButton->hide();
     m_customModelEdit->hide();
     m_customVisible = false;
 
@@ -329,6 +424,9 @@ void KcmAiAssistant::defaults()
     m_customModelEdit->clear();
     m_radioModel->setChecked(true);
     m_extraFlagsEdit->clear();
+    m_systemPromptEdit->clear();
+    m_systemPromptEdit->setMinimumHeight(120);
+    m_systemPromptEdit->setMaximumHeight(120);
     setNeedsSave(true);
 }
 
@@ -337,13 +435,20 @@ void KcmAiAssistant::onSourceChanged(int id, bool checked)
     if (!checked) return;
 
     if (id == 0) {
+        m_cloudLabel->show();
         m_cloudCombo->show();
+        m_localLabel->hide();
         m_localCombo->hide();
+        m_detectButton->hide();
+        m_statusLabel->clear();
         if (m_customVisible) m_customModelEdit->show();
     } else {
+        m_cloudLabel->hide();
         m_cloudCombo->hide();
         m_customModelEdit->hide();
+        m_localLabel->show();
         m_localCombo->show();
+        m_detectButton->show();
     }
 
     onChanged();

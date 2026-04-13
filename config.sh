@@ -130,6 +130,20 @@ dialog_combolist() {
     fi
 }
 
+dialog_textedit() {
+    local title="${1}" text="${2}" filepath="${3}"
+    if [ "${DIALOGBackend}" = "kdialog" ]; then
+        kdialog --title "${title}" --textinputbox "${text}" "$(cat "${filepath}" 2>/dev/null || echo "")" 2>/dev/null || echo "__CANCEL__"
+    else
+        local tmpfile
+        tmpfile="$(mktemp)"
+        cat "${filepath}" 2>/dev/null > "${tmpfile}" || true
+        zenity --title "${title}" --width=550 --height=400 \
+            --text-info --editable --filename="${tmpfile}" 2>/dev/null || echo "__CANCEL__"
+        rm -f "${tmpfile}"
+    fi
+}
+
 show_main_menu() {
     local current="Current: Model=${MODEL}  Source=${MODEL_SOURCE:-cloud}  Mode=${LAUNCH_MODE}"
     dialog_menu "AI Assistant Configuration" "${current}" \
@@ -137,6 +151,7 @@ show_main_menu() {
         "model-source"   "Switch cloud/local source" \
         "launch-mode"    "Change launch mode" \
         "extra-flags"    "Set extra opencode flags" \
+        "system-prompt"  "Edit system prompt" \
         "view-config"    "Open config file in editor" \
         "reset"          "Reset all settings to defaults"
 }
@@ -248,8 +263,6 @@ EXTRA_FLAGS=${extra_flags}
 # Launch mode: "model" = opencode --model <MODEL>, "raw" = opencode <EXTRA_FLAGS>, "default" = opencode with no flags
 LAUNCH_MODE=${launch_mode}
 EOF
-
-    dialog_info "Saved" "Configuration saved:\n\n  Model: ${model}\n  Source: ${model_source}\n  Launch mode: ${launch_mode}\n  Extra flags: ${extra_flags:-none}"
 }
 
 while true; do
@@ -292,6 +305,16 @@ while true; do
             save_config "${MODEL}" "${MODEL_SOURCE:-cloud}" "${LAUNCH_MODE}" "${NEW_FLAGS}"
             source "${CONFIG_FILE}"
             ;;
+        "system-prompt")
+            PROMPT_FILE="${CONFIG_DIR}/system-prompt.md"
+            NEW_PROMPT="$(dialog_textedit "System Prompt" "Custom instructions added to every opencode session launched from Dolphin:" "${PROMPT_FILE}")"
+            [ "${NEW_PROMPT}" = "__CANCEL__" ] && continue
+            if [ -z "${NEW_PROMPT}" ]; then
+                rm -f "${PROMPT_FILE}"
+            else
+                printf '%s\n' "${NEW_PROMPT}" > "${PROMPT_FILE}"
+            fi
+            ;;
         "view-config")
             if command -v kate &>/dev/null; then
                 kate "${CONFIG_FILE}" 2>/dev/null &
@@ -324,6 +347,7 @@ EXTRA_FLAGS=
 # Launch mode: "model" = opencode --model <MODEL>, "raw" = opencode <EXTRA_FLAGS>, "default" = opencode with no flags
 LAUNCH_MODE=model
 DEFAULTS
+            rm -f "${CONFIG_DIR}/system-prompt.md"
             source "${CONFIG_FILE}"
             dialog_info "Reset" "Settings reset to defaults."
             ;;

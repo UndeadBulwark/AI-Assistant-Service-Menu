@@ -8,6 +8,24 @@ class QLineEdit;
 class QButtonGroup;
 class QLabel;
 class QPushButton;
+class QTextEdit;
+
+class DragHandle : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit DragHandle(QTextEdit *target, QWidget *parent = nullptr);
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+
+private:
+    QTextEdit *m_target;
+    int m_startY;
+    int m_startHeight;
+};
 
 class KcmAiAssistant : public KCModule
 {
@@ -36,8 +54,10 @@ private:
     QRadioButton *m_radioCloud;
     QRadioButton *m_radioLocal;
 
+    QLabel *m_cloudLabel;
     QComboBox *m_cloudCombo;
     QLineEdit *m_customModelEdit;
+    QLabel *m_localLabel;
     QComboBox *m_localCombo;
 
     QRadioButton *m_radioModel;
@@ -45,6 +65,7 @@ private:
     QRadioButton *m_radioDefault;
     QButtonGroup *m_launchModeGroup;
     QLineEdit *m_extraFlagsEdit;
+    QTextEdit *m_systemPromptEdit;
     QPushButton *m_detectButton;
     QLabel *m_statusLabel;
 

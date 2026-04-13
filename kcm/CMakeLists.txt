@@ -25,6 +25,8 @@ set(kcm_ai_assistant_SRCS
     kcm_ai_assistant.cpp
 )
 
+qt6_add_resources(kcm_ai_assistant_SRCS resources.qrc)
+
 kcoreaddons_add_plugin(kcm_ai_assistant
     INSTALL_NAMESPACE "plasma/kcms/systemsettings"
     SOURCES ${kcm_ai_assistant_SRCS}

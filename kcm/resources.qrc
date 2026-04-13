@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias="lambda-ai.svg">../icons/lambda-ai.svg</file>
+    </qresource>
+</RCC>
