@@ -1,16 +1,19 @@
 # AI Assistant Service Menu
 
-KDE Dolphin context menu that lets you right-click any folder and open an AI assistant (opencode) in that directory. Includes Ollama auto-start and a Zenity GUI for configuration.
+KDE Dolphin context menu that lets you right-click any folder and open an AI assistant (opencode) or terminal in that directory. Includes Ollama auto-start and a Zenity GUI for configuration.
 
 **Terminal-agnostic** — automatically detects your terminal emulator (Konsole, GNOME Terminal, Alacritty, Kitty, foot, WezTerm, Tilix, xfce4-terminal, xterm, and more).
 
 ## What it does
 
-- Adds **"Open AI Assistant Here"** to the KDE Dolphin right-click menu for folders
-- Adds **"Configure AI Assistant"** to the right-click menu for quick config changes
-- Opens your terminal in the selected directory and launches [opencode](https://github.com/anomalyco/opencode)
+Right-click any folder in Dolphin to get three actions, in order:
+
+1. **Open Terminal Here** — open a terminal in the selected directory
+2. **Open AI Assistant Here** — open a terminal and launch [opencode](https://github.com/anomalyco/opencode) in that directory
+3. **Configure AI Assistant** — Zenity GUI to switch models, launch modes, and flags
+
+Additional features:
 - Auto-detects your terminal emulator — works on KDE, GNOME, or any desktop
-- Zenity GUI to switch between models, launch modes, and extra flags
 - Auto-starts Ollama as a systemd user service (if installed)
 - Falls back to on-demand Ollama start if the service isn't running
 - Distro-agnostic — no hardcoded paths, works on any Linux
@@ -31,16 +34,7 @@ cd AI-Assistant-Service-Menu
 ./install.sh
 ```
 
-After installation, right-click any folder in Dolphin:
-
-- **"Open AI Assistant Here"** — launch opencode in that directory
-- **"Configure AI Assistant"** — change model, launch mode, flags
-
-Or configure from the terminal:
-
-```bash
-zenity-config.sh
-```
+After installation, right-click any folder in Dolphin to see the three actions.
 
 ## Uninstall
 
@@ -49,7 +43,7 @@ cd AI-Assistant-Service-Menu
 ./uninstall.sh
 ```
 
-Removes the context menu entry, launch scripts, config, and Ollama systemd service. Ollama itself is not removed.
+Removes the context menu entries, launch scripts, icon, config, and Ollama systemd service. Ollama itself is not removed.
 
 ## Configuration
 
@@ -90,6 +84,10 @@ The Zenity config GUI offers:
 
 The `OPENCODE_MODEL` env var overrides the config file model if set.
 
+## Icon
+
+The **Open AI Assistant Here** action uses a lambda (λ) icon (`lambda-ai.svg`) — a Catppuccin Mocha-styled lambda symbol on a dark background.
+
 ## Files
 
 | File | Installed to |
@@ -98,6 +96,7 @@ The `OPENCODE_MODEL` env var overrides the config file model if set.
 | `opencode-launch.sh` | `~/.local/bin/opencode-launch.sh` |
 | `zenity-config.sh` | `~/.local/bin/zenity-config.sh` |
 | `opencode-context.desktop` | `~/.local/share/kio/servicemenus/opencode-context.desktop` |
+| `icons/lambda-ai.svg` | `~/.local/share/icons/hicolor/scalable/apps/lambda-ai.svg` |
 | `ollama.service` | `~/.config/systemd/user/ollama.service` |
 | (auto-created) | `~/.config/ai-assistant-menu/config.conf` |
 

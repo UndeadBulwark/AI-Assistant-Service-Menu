@@ -2,6 +2,7 @@
 set -euo pipefail
 
 WORKDIR="${1:-$HOME}"
+MODE="${2:-opencode}"
 
 find_terminal() {
     local terminals=(
@@ -36,6 +37,80 @@ find_terminal() {
     return 1
 }
 
+launch_terminal_only() {
+    local term="${1}"
+    local dir="${2}"
+    case "${term}" in
+        konsole)          exec konsole --workdir "${dir}" ;;
+        org.gnome.Terminal|gnome-terminal) exec gnome-terminal --working-directory="${dir}" ;;
+        alacritty)        exec alacritty --working-directory "${dir}" ;;
+        kitty)            exec kitty --directory "${dir}" ;;
+        foot)             exec foot --directory="${dir}" ;;
+        wezterm)          exec wezterm start --cwd "${dir}" ;;
+        tilix)            exec tilix --working-directory "${dir}" ;;
+        xfce4-terminal)   exec xfce4-terminal --working-directory "${dir}" ;;
+        mate-terminal)    exec mate-terminal --working-directory "${dir}" ;;
+        lxterminal)       exec lxterminal --working-directory "${dir}" ;;
+        sakura)           exec sakura --working-directory "${dir}" ;;
+        st)               exec st -d "${dir}" ;;
+        xterm)            exec xterm ;;
+        *)                exec "${term}" ;;
+    esac
+}
+
+launch_with_opencode() {
+    local term="${1}"
+    local dir="${2}"
+    case "${term}" in
+        konsole)
+            exec konsole --workdir "${dir}" -e "$HOME/.local/bin/opencode-launch.sh"
+            ;;
+        org.gnome.Terminal|gnome-terminal)
+            exec gnome-terminal --working-directory="${dir}" -- "$HOME/.local/bin/opencode-launch.sh"
+            ;;
+        alacritty)
+            exec alacritty --working-directory "${dir}" -e "$HOME/.local/bin/opencode-launch.sh"
+            ;;
+        kitty)
+            exec kitty --directory "${dir}" "$HOME/.local/bin/opencode-launch.sh"
+            ;;
+        foot)
+            exec foot --directory="${dir}" "$HOME/.local/bin/opencode-launch.sh"
+            ;;
+        wezterm)
+            exec wezterm start --cwd "${dir}" -- "$HOME/.local/bin/opencode-launch.sh"
+            ;;
+        tilix)
+            exec tilix --working-directory "${dir}" -e "$HOME/.local/bin/opencode-launch.sh"
+            ;;
+        xfce4-terminal)
+            exec xfce4-terminal --working-directory "${dir}" -x "$HOME/.local/bin/opencode-launch.sh"
+            ;;
+        mate-terminal)
+            exec mate-terminal --working-directory="${dir}" -x "$HOME/.local/bin/opencode-launch.sh"
+            ;;
+        lxterminal)
+            exec lxterminal --working-directory "${dir}" -e "$HOME/.local/bin/opencode-launch.sh"
+            ;;
+        sakura)
+            exec sakura --working-directory "${dir}" -x "$HOME/.local/bin/opencode-launch.sh"
+            ;;
+        st)
+            exec st -d "${dir}" -e "$HOME/.local/bin/opencode-launch.sh"
+            ;;
+        xterm)
+            exec xterm -e "cd '${dir}' && '$HOME/.local/bin/opencode-launch.sh'"
+            ;;
+        *)
+            if [ -x "${term}" ]; then
+                exec "${term}" -e "cd '${dir}' && '$HOME/.local/bin/opencode-launch.sh'"
+            fi
+            echo "Error: unknown terminal '${term}'" >&2
+            exit 1
+            ;;
+    esac
+}
+
 TERMINAL="$(find_terminal)" || {
     echo "Error: no terminal emulator found." >&2
     echo "Install one of: konsole, gnome-terminal, alacritty, kitty, foot, wezterm, tilix, xfce4-terminal, xterm" >&2
@@ -43,51 +118,14 @@ TERMINAL="$(find_terminal)" || {
     exit 1
 }
 
-case "${TERMINAL}" in
-    konsole)
-        exec konsole --workdir "${WORKDIR}" -e "$HOME/.local/bin/opencode-launch.sh"
+case "${MODE}" in
+    terminal)
+        launch_terminal_only "${TERMINAL}" "${WORKDIR}"
         ;;
-    org.gnome.Terminal|gnome-terminal)
-        exec gnome-terminal --working-directory="${WORKDIR}" -- "$HOME/.local/bin/opencode-launch.sh"
-        ;;
-    alacritty)
-        exec alacritty --working-directory "${WORKDIR}" -e "$HOME/.local/bin/opencode-launch.sh"
-        ;;
-    kitty)
-        exec kitty --directory "${WORKDIR}" "$HOME/.local/bin/opencode-launch.sh"
-        ;;
-    foot)
-        exec foot --directory="${WORKDIR}" "$HOME/.local/bin/opencode-launch.sh"
-        ;;
-    wezterm)
-        exec wezterm start --cwd "${WORKDIR}" -- "$HOME/.local/bin/opencode-launch.sh"
-        ;;
-    tilix)
-        exec tilix --working-directory "${WORKDIR}" -e "$HOME/.local/bin/opencode-launch.sh"
-        ;;
-    xfce4-terminal)
-        exec xfce4-terminal --working-directory="${WORKDIR}" -x "$HOME/.local/bin/opencode-launch.sh"
-        ;;
-    mate-terminal)
-        exec mate-terminal --working-directory="${WORKDIR}" -x "$HOME/.local/bin/opencode-launch.sh"
-        ;;
-    lxterminal)
-        exec lxterminal --working-directory="${WORKDIR}" -e "$HOME/.local/bin/opencode-launch.sh"
-        ;;
-    sakura)
-        exec sakura --working-directory="${WORKDIR}" -x "$HOME/.local/bin/opencode-launch.sh"
-        ;;
-    st)
-        exec st -d "${WORKDIR}" -e "$HOME/.local/bin/opencode-launch.sh"
-        ;;
-    xterm)
-        exec xterm -e "cd '${WORKDIR}' && '$HOME/.local/bin/opencode-launch.sh'"
+    opencode)
+        launch_with_opencode "${TERMINAL}" "${WORKDIR}"
         ;;
     *)
-        if [ -x "${TERMINAL}" ]; then
-            exec "${TERMINAL}" -e "cd '${WORKDIR}' && '$HOME/.local/bin/opencode-launch.sh'"
-        fi
-        echo "Error: unknown terminal '${TERMINAL}'" >&2
-        exit 1
+        launch_with_opencode "${TERMINAL}" "${WORKDIR}"
         ;;
 esac

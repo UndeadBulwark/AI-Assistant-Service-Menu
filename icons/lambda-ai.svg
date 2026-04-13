@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#89b4fa"/>
+      <stop offset="100%" stop-color="#74c7ec"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="8" fill="#1e1e2e"/>
+  <text x="24" y="36" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="36" font-weight="bold" fill="url(#g)">λ</text>
+</svg>

@@ -7,6 +7,7 @@ INSTALL_DIR="${HOME}/.local/bin"
 SERVICE_MENU_DIR="${HOME}/.local/share/kio/servicemenus"
 SYSTEMD_DIR="${HOME}/.config/systemd/user"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ai-assistant-menu"
+ICON_DIR="${HOME}/.local/share/icons/hicolor/scalable/apps"
 
 echo "=== AI Assistant Service Menu Installer ==="
 echo ""
@@ -28,6 +29,17 @@ find_ollama() {
     done
 
     return 1
+}
+
+find_terminal_cmd() {
+    local terminals=("konsole" "gnome-terminal" "alacritty" "kitty" "foot" "wezterm" "tilix" "xfce4-terminal" "xterm")
+    for term in "${terminals[@]}"; do
+        if command -v "${term}" &>/dev/null; then
+            echo "${term}"
+            return 0
+        fi
+    done
+    echo "xterm"
 }
 
 if ! OLLAMA_BIN="$(find_ollama)"; then
@@ -74,6 +86,15 @@ else
     echo "  -> ${CONFIG_DIR}/config.conf (already exists, kept)"
 fi
 
+echo "Installing lambda icon..."
+mkdir -p "${ICON_DIR}"
+cp "${SCRIPT_DIR}/icons/lambda-ai.svg" "${ICON_DIR}/lambda-ai.svg"
+echo "  -> ${ICON_DIR}/lambda-ai.svg"
+
+if command -v gtk-update-icon-cache &>/dev/null; then
+    gtk-update-icon-cache -f "${HOME}/.local/share/icons/hicolor" &>/dev/null || true
+fi
+
 echo "Installing KDE service menu..."
 mkdir -p "${SERVICE_MENU_DIR}"
 
@@ -84,8 +105,16 @@ if [ "${INSTALL_OLLAMA_SERVICE}" = true ]; then
     fi
 fi
 
-sed "s|%h|${HOME}|g" \
+TERMINAL_CMD="$(find_terminal_cmd)"
+
+sed -e "s|%h|${HOME}|g" -e "s|konsole --workdir %f|${TERMINAL_CMD} --workdir %f|g" \
     "${SCRIPT_DIR}/opencode-context.desktop" > "${SERVICE_MENU_DIR}/opencode-context.desktop"
+
+if [ "${TERMINAL_CMD}" = "gnome-terminal" ]; then
+    sed -i 's|gnome-terminal --workdir %f|gnome-terminal --working-directory=%f|' \
+        "${SERVICE_MENU_DIR}/opencode-context.desktop"
+fi
+
 echo "  -> ${SERVICE_MENU_DIR}/opencode-context.desktop"
 
 if [ "${INSTALL_OLLAMA_SERVICE}" = true ]; then
@@ -116,10 +145,11 @@ echo ""
 echo "=== Installation complete! ==="
 echo ""
 echo "Right-click any folder in Dolphin:"
-echo "  'Open AI Assistant Here'  — launch opencode in that directory"
-echo "  'Configure AI Assistant'   — change model, launch mode, flags"
+echo "  1. Open Terminal Here"
+echo "  2. Open AI Assistant Here"
+echo "  3. Configure AI Assistant"
 echo ""
-echo "Or run: zenity-config.sh"
+echo "Or configure from terminal: zenity-config.sh"
 echo ""
 if [ "${INSTALL_OLLAMA_SERVICE}" = true ]; then
     echo "Ollama will auto-start on login."
